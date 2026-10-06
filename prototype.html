@@ -1,0 +1,1043 @@
+<!DOCTYPE html>
+<html lang="en" dir="ltr" class="dark">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>SLM Medical — Offline Emergency First-Aid Assistant</title>
+  <script src="https://www.gstatic.com/antigravity/web/dev/tailwindcss.min.js"></script>
+  <style>
+    /* Custom Design Tokens & Pulse Animations */
+    :root {
+      --bg-dark: #0B0F19;
+      --surface-dark: #151C2C;
+      --surface-card: #1E293B;
+      --border-slate: #334155;
+      
+      --critical-red: #DC2626;
+      --critical-bg: #450A0A;
+      
+      --urgent-amber: #D97706;
+      --urgent-bg: #451A03;
+      
+      --stable-green: #16A34A;
+      --stable-bg: #052E16;
+
+      --voice-blue: #3B82F6;
+      --voice-purple: #A855F7;
+      --voice-pink: #EC4899;
+      --voice-green: #10B981;
+    }
+
+    body {
+      background-color: var(--bg-dark);
+      color: #F8FAFC;
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      touch-action: manipulation;
+      user-select: none;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    /* Accessibility Text Scaling */
+    .large-text-mode {
+      font-size: 120%;
+    }
+    .large-text-mode h1 { font-size: 2.25rem !important; }
+    .large-text-mode h2 { font-size: 1.875rem !important; }
+    .large-text-mode p, .large-text-mode button { font-size: 1.25rem !important; }
+
+    /* Keyframe Animations */
+    @keyframes sosPulse {
+      0% { box-shadow: 0 0 0 0 rgba(220, 38, 38, 0.7); }
+      70% { box-shadow: 0 0 0 20px rgba(220, 38, 38, 0); }
+      100% { box-shadow: 0 0 0 0 rgba(220, 38, 38, 0); }
+    }
+    .animate-sos-pulse {
+      animation: sosPulse 2s infinite;
+    }
+
+    @keyframes wavePulse {
+      0%, 100% { transform: scale(1); opacity: 0.6; }
+      50% { transform: scale(1.15); opacity: 1; }
+    }
+    .animate-wave-pulse {
+      animation: wavePulse 1.2s ease-in-out infinite;
+    }
+
+    @keyframes cprBeat {
+      0%, 100% { transform: scale(1); }
+      15% { transform: scale(1.12); }
+      30% { transform: scale(1); }
+    }
+    .animate-cpr-beat {
+      animation: cprBeat 0.545s infinite; /* ~110 BPM */
+    }
+
+    /* Equalizer Bar Animation for Voice Narration */
+    .eq-bar {
+      width: 4px;
+      background-color: var(--voice-green);
+      animation: eqHeight 0.8s ease-in-out infinite alternate;
+      border-radius: 2px;
+    }
+    .eq-bar:nth-child(1) { height: 12px; animation-delay: 0.1s; }
+    .eq-bar:nth-child(2) { height: 24px; animation-delay: 0.3s; }
+    .eq-bar:nth-child(3) { height: 18px; animation-delay: 0.2s; }
+    .eq-bar:nth-child(4) { height: 28px; animation-delay: 0.4s; }
+    .eq-bar:nth-child(5) { height: 14px; animation-delay: 0.25s; }
+
+    @keyframes eqHeight {
+      0% { height: 8px; }
+      100% { height: 32px; }
+    }
+  </style>
+</head>
+<body class="min-h-screen flex flex-col justify-between antialiased selection:bg-red-500 selection:text-white pb-28">
+
+  <!-- TOP HEADER / ACCESSIBILITY & OFFLINE BAR -->
+  <header class="sticky top-0 z-40 bg-[#151C2C]/95 backdrop-blur-md border-b border-slate-700 px-4 py-3">
+    <div class="max-w-xl mx-auto flex items-center justify-between gap-2">
+      
+      <!-- Brand & Offline Status Badge -->
+      <div class="flex items-center gap-2">
+        <div class="w-10 h-10 rounded-xl bg-red-600 flex items-center justify-center font-bold text-white shadow-lg text-xl">
+          🚑
+        </div>
+        <div>
+          <div class="flex items-center gap-1.5">
+            <h1 class="font-extrabold text-base tracking-tight text-white leading-tight">FIRST AID</h1>
+            <span id="offlineBadge" class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-bold bg-emerald-950 text-emerald-300 border border-emerald-500/50">
+              <span class="w-2 h-2 rounded-full bg-emerald-400 animate-ping"></span>
+              <span id="offlineBadgeText">100% Offline</span>
+            </span>
+          </div>
+          <p id="subTitleText" class="text-xs text-slate-400 font-medium">Remote Emergency Assistant</p>
+        </div>
+      </div>
+
+      <!-- Quick Accessibility Tools -->
+      <div class="flex items-center gap-1.5">
+        <!-- Language Switcher -->
+        <select id="langSelect" onchange="changeLanguage(this.value)" aria-label="Language Selector" class="bg-slate-800 text-slate-200 border border-slate-600 text-xs font-bold rounded-lg px-2 py-2 focus:ring-2 focus:ring-red-500">
+          <option value="en">🇬🇧 EN</option>
+          <option value="sw">🇰🇪 SW (Kiswahili)</option>
+          <option value="ar">🇸🇦 AR (العربية - RTL)</option>
+          <option value="hi">🇮🇳 HI (हिन्दी)</option>
+          <option value="es">🇪🇸 ES (Español)</option>
+        </select>
+
+        <!-- Large Font Toggle -->
+        <button onclick="toggleLargeFont()" id="fontBtn" aria-label="Toggle Large Text" title="Large Text Mode" class="w-10 h-10 rounded-lg bg-slate-800 border border-slate-600 text-slate-200 font-black text-sm flex items-center justify-center active:bg-slate-700">
+          A+
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <!-- VIEW MODE SWITCHER (APP VS DESIGN SYSTEM WORKBENCH) -->
+  <div class="max-w-xl mx-auto w-full px-4 pt-3 flex gap-2">
+    <button onclick="switchView('app')" id="tabAppBtn" class="flex-1 py-2.5 px-3 rounded-xl font-bold text-xs border transition-all text-center bg-red-600 border-red-500 text-white shadow-md">
+      📱 Interactive Emergency App
+    </button>
+    <button onclick="switchView('tokens')" id="tabTokensBtn" class="flex-1 py-2.5 px-3 rounded-xl font-bold text-xs border transition-all text-center bg-slate-800 border-slate-700 text-slate-300 hover:bg-slate-700">
+      🎨 Design Tokens & Components
+    </button>
+  </div>
+
+  <!-- MAIN APP CONTAINER -->
+  <main class="max-w-xl mx-auto w-full px-4 py-4 flex-grow">
+
+    <!-- ==================== VIEW 1: INTERACTIVE APP FLOW ==================== -->
+    <div id="viewApp" class="space-y-4">
+
+      <!-- APP SCREEN 1: CATEGORY SELECTION -->
+      <div id="appScreenHome" class="space-y-4">
+        <!-- Prompt / Emergency Banner -->
+        <div class="bg-gradient-to-r from-red-950/80 via-slate-900 to-slate-900 border-2 border-red-600/60 rounded-2xl p-4 shadow-xl flex items-center justify-between">
+          <div>
+            <div class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-red-600/30 text-red-300 text-xs font-bold border border-red-500/40 mb-1">
+              <span>🛑</span> <span id="lblEmergencyGuide">EMERGENCY FIRST AID</span>
+            </div>
+            <h2 id="lblSelectEmergency" class="text-xl font-black text-white">Tap What Happened</h2>
+            <p id="lblLowLitSub" class="text-xs text-slate-300">Big visual buttons • Voice enabled • No signal needed</p>
+          </div>
+          <button onclick="simulateVoiceTrigger('CPR')" class="w-12 h-12 rounded-full bg-purple-900/80 border-2 border-purple-400 text-purple-200 flex flex-col items-center justify-center text-xs font-bold shrink-0 animate-pulse">
+            🎤
+            <span class="text-[9px]">VOICE</span>
+          </button>
+        </div>
+
+        <!-- CATEGORIES GRID (ICON-FIRST, HIGH CONTRAST TOUCH TARGETS min 120px height) -->
+        <div class="grid grid-cols-2 gap-3">
+
+          <!-- 1. CPR & BREATHING (CRITICAL RED OCTAGON) -->
+          <button onclick="openWizard('cpr')" class="group relative bg-[#1E293B] hover:bg-red-950/50 border-2 border-red-500/80 rounded-2xl p-4 flex flex-col items-center text-center justify-between min-h-[140px] shadow-lg active:scale-95 transition-all">
+            <div class="absolute top-2 right-2 px-2 py-0.5 rounded-full text-[10px] font-black bg-red-600 text-white flex items-center gap-1">
+              <span>🛑</span> CRITICAL
+            </div>
+            <!-- Large Line Art SVG Icon -->
+            <div class="w-16 h-16 rounded-full bg-red-950/90 border-2 border-red-500 flex items-center justify-center my-1 text-red-400 group-hover:scale-110 transition-transform">
+              <svg class="w-10 h-10" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.684a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"></path>
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3"></path>
+              </svg>
+            </div>
+            <div class="w-full">
+              <span id="catCprTitle" class="block font-black text-lg text-white group-hover:text-red-300">CPR / BREATHING</span>
+              <span id="catCprDesc" class="block text-xs text-slate-400">Unconscious • Not Breathing</span>
+            </div>
+          </button>
+
+          <!-- 2. SEVERE BLEEDING (CRITICAL RED OCTAGON) -->
+          <button onclick="openWizard('bleeding')" class="group relative bg-[#1E293B] hover:bg-red-950/50 border-2 border-red-500/80 rounded-2xl p-4 flex flex-col items-center text-center justify-between min-h-[140px] shadow-lg active:scale-95 transition-all">
+            <div class="absolute top-2 right-2 px-2 py-0.5 rounded-full text-[10px] font-black bg-red-600 text-white flex items-center gap-1">
+              <span>🛑</span> CRITICAL
+            </div>
+            <div class="w-16 h-16 rounded-full bg-red-950/90 border-2 border-red-500 flex items-center justify-center my-1 text-red-400 group-hover:scale-110 transition-transform">
+              <svg class="w-10 h-10" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 8H9L8 4z"></path>
+                <circle cx="12" cy="18" r="3" stroke="currentColor" stroke-width="2"></circle>
+              </svg>
+            </div>
+            <div class="w-full">
+              <span id="catBleedTitle" class="block font-black text-lg text-white group-hover:text-red-300">HEAVY BLEEDING</span>
+              <span id="catBleedDesc" class="block text-xs text-slate-400">Deep Wounds • Gushing</span>
+            </div>
+          </button>
+
+          <!-- 3. CHOKING (URGENT AMBER DIAMOND) -->
+          <button onclick="openWizard('choking')" class="group relative bg-[#1E293B] hover:bg-amber-950/50 border-2 border-amber-500/80 rounded-2xl p-4 flex flex-col items-center text-center justify-between min-h-[140px] shadow-lg active:scale-95 transition-all">
+            <div class="absolute top-2 right-2 px-2 py-0.5 rounded-full text-[10px] font-black bg-amber-600 text-white flex items-center gap-1">
+              <span>🔶</span> URGENT
+            </div>
+            <div class="w-16 h-16 rounded-full bg-amber-950/90 border-2 border-amber-500 flex items-center justify-center my-1 text-amber-400 group-hover:scale-110 transition-transform">
+              <svg class="w-10 h-10" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path>
+              </svg>
+            </div>
+            <div class="w-full">
+              <span id="catChokeTitle" class="block font-black text-lg text-white group-hover:text-amber-300">CHOKING</span>
+              <span id="catChokeDesc" class="block text-xs text-slate-400">Blocked Airway • Silent</span>
+            </div>
+          </button>
+
+          <!-- 4. BURNS (URGENT AMBER DIAMOND) -->
+          <button onclick="openWizard('burns')" class="group relative bg-[#1E293B] hover:bg-amber-950/50 border-2 border-amber-500/80 rounded-2xl p-4 flex flex-col items-center text-center justify-between min-h-[140px] shadow-lg active:scale-95 transition-all">
+            <div class="absolute top-2 right-2 px-2 py-0.5 rounded-full text-[10px] font-black bg-amber-600 text-white flex items-center gap-1">
+              <span>🔶</span> URGENT
+            </div>
+            <div class="w-16 h-16 rounded-full bg-amber-950/90 border-2 border-amber-500 flex items-center justify-center my-1 text-amber-400 group-hover:scale-110 transition-transform">
+              <svg class="w-10 h-10" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 18.657A8 8 0 016.343 7.343S7 9 9 10c0-2 .5-5 2.986-7C14 5 16.09 5.777 17.656 7.343A7.975 7.975 0 0120 13a7.975 7.975 0 01-2.343 5.657z"></path>
+              </svg>
+            </div>
+            <div class="w-full">
+              <span id="catBurnTitle" class="block font-black text-lg text-white group-hover:text-amber-300">BURNS</span>
+              <span id="catBurnDesc" class="block text-xs text-slate-400">Fire • Chemical • Scald</span>
+            </div>
+          </button>
+
+          <!-- 5. FRACTURES (URGENT AMBER DIAMOND) -->
+          <button onclick="openWizard('fracture')" class="group relative bg-[#1E293B] hover:bg-amber-950/50 border-2 border-amber-500/80 rounded-2xl p-4 flex flex-col items-center text-center justify-between min-h-[140px] shadow-lg active:scale-95 transition-all">
+            <div class="absolute top-2 right-2 px-2 py-0.5 rounded-full text-[10px] font-black bg-amber-600 text-white flex items-center gap-1">
+              <span>🔶</span> URGENT
+            </div>
+            <div class="w-16 h-16 rounded-full bg-amber-950/90 border-2 border-amber-500 flex items-center justify-center my-1 text-amber-400 group-hover:scale-110 transition-transform">
+              <svg class="w-10 h-10" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path>
+              </svg>
+            </div>
+            <div class="w-full">
+              <span id="catFracTitle" class="block font-black text-lg text-white group-hover:text-amber-300">BROKEN BONE</span>
+              <span id="catFracDesc" class="block text-xs text-slate-400">Sprain • Deformed Limb</span>
+            </div>
+          </button>
+
+          <!-- 6. SNAKE & BITES (URGENT AMBER DIAMOND) -->
+          <button onclick="openWizard('bites')" class="group relative bg-[#1E293B] hover:bg-amber-950/50 border-2 border-amber-500/80 rounded-2xl p-4 flex flex-col items-center text-center justify-between min-h-[140px] shadow-lg active:scale-95 transition-all">
+            <div class="absolute top-2 right-2 px-2 py-0.5 rounded-full text-[10px] font-black bg-amber-600 text-white flex items-center gap-1">
+              <span>🔶</span> URGENT
+            </div>
+            <div class="w-16 h-16 rounded-full bg-amber-950/90 border-2 border-amber-500 flex items-center justify-center my-1 text-amber-400 group-hover:scale-110 transition-transform">
+              <svg class="w-10 h-10" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+              </svg>
+            </div>
+            <div class="w-full">
+              <span id="catBitesTitle" class="block font-black text-lg text-white group-hover:text-amber-300">BITES & POISON</span>
+              <span id="catBitesDesc" class="block text-xs text-slate-400">Snake • Insect • Chemical</span>
+            </div>
+          </button>
+        </div>
+
+        <!-- Offline Status Footer Note -->
+        <div class="bg-slate-900/90 border border-slate-700/80 rounded-xl p-3 text-center text-xs text-slate-400 flex items-center justify-center gap-2">
+          <span>🛡️</span>
+          <span id="lblOfflineFooter">All medical guides are pre-stored locally. Zero internet required.</span>
+        </div>
+      </div>
+
+      <!-- APP SCREEN 2: STEP-BY-STEP EMERGENCY WIZARD (HIDDEN BY DEFAULT) -->
+      <div id="appScreenWizard" class="hidden space-y-4">
+        
+        <!-- Back Navigation & Step Counter Bar -->
+        <div class="flex items-center justify-between gap-2">
+          <button onclick="closeWizard()" class="px-3 py-2 rounded-xl bg-slate-800 border border-slate-600 text-slate-200 font-bold text-xs flex items-center gap-1.5 active:bg-slate-700">
+            <span>←</span> <span id="btnBack">BACK</span>
+          </button>
+
+          <!-- Severity Badge Indicator -->
+          <div id="wizSeverityBadge" class="px-3 py-1 rounded-full text-xs font-black bg-red-600 text-white flex items-center gap-1.5 shadow-md">
+            <span>🛑</span> <span id="wizSeverityText">CRITICAL EMERGENCY</span>
+          </div>
+
+          <!-- Audio Readout Button -->
+          <button onclick="speakCurrentStep()" class="p-2 rounded-xl bg-emerald-950 border border-emerald-500 text-emerald-300 font-bold text-xs flex items-center gap-1">
+            <span>🔊</span> <span id="btnReadAloud">READ</span>
+          </button>
+        </div>
+
+        <!-- STEP CARD -->
+        <div class="bg-[#1E293B] border-2 border-slate-600 rounded-2xl p-5 shadow-2xl space-y-4">
+          
+          <!-- Step Progress Indicator -->
+          <div class="flex items-center justify-between border-b border-slate-700 pb-3">
+            <span id="wizStepNumber" class="text-xs font-black tracking-widest text-red-400 uppercase">STEP 1 OF 3</span>
+            <div class="flex gap-1.5" id="wizDots">
+              <span class="w-6 h-2 rounded-full bg-red-500"></span>
+              <span class="w-2 h-2 rounded-full bg-slate-700"></span>
+              <span class="w-2 h-2 rounded-full bg-slate-700"></span>
+            </div>
+          </div>
+
+          <!-- Imperative Instruction Title -->
+          <h2 id="wizStepTitle" class="text-2xl font-black text-white leading-tight">
+            Place Hands on Center of Chest
+          </h2>
+
+          <!-- Line Art SVG Graphic Illustration Box -->
+          <div id="wizIllustrationBox" class="w-full h-48 bg-slate-900 border border-slate-700 rounded-xl flex items-center justify-center p-4 relative overflow-hidden">
+            <!-- Dynamic Vector Graphic SVG -->
+            <svg id="wizSvgGraphic" class="w-36 h-36 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.684a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"></path>
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 11l2 2 4-4"></path>
+            </svg>
+
+            <!-- Metronome Visualizer overlay (for CPR mode) -->
+            <div id="cprMetronomeBox" class="absolute bottom-2 inset-x-2 bg-red-950/90 border border-red-500/80 rounded-lg p-2 flex items-center justify-between text-xs font-bold">
+              <div class="flex items-center gap-2">
+                <span class="w-3 h-3 rounded-full bg-red-500 animate-cpr-beat"></span>
+                <span class="text-red-200">CPR CADENCE: 110 BPM</span>
+              </div>
+              <button onclick="toggleMetronomeAudio()" id="btnMetronomeSound" class="px-2 py-1 rounded bg-red-600 text-white text-[10px] font-black">
+                🔊 SOUND: ON
+              </button>
+            </div>
+          </div>
+
+          <!-- Direct Imperative Description -->
+          <p id="wizStepDescription" class="text-base font-semibold text-slate-200 leading-snug">
+            Interlock fingers. Position heel of hand on lower half of breastbone. Keep arms straight.
+          </p>
+
+          <!-- Step Action Controls (Large 64px Touch Target) -->
+          <div class="pt-2 flex gap-3">
+            <button onclick="prevStep()" id="btnPrevStep" class="w-16 h-16 rounded-2xl bg-slate-800 border-2 border-slate-600 text-slate-300 font-black text-xl flex items-center justify-center active:scale-95">
+              ←
+            </button>
+            <button onclick="nextStep()" id="btnNextStep" class="flex-1 h-16 rounded-2xl bg-red-600 hover:bg-red-500 border-2 border-red-400 text-white font-black text-xl flex items-center justify-center gap-2 shadow-lg active:scale-95">
+              <span id="lblNextBtnText">NEXT STEP</span>
+              <span>→</span>
+            </button>
+          </div>
+
+        </div>
+
+      </div>
+
+    </div>
+
+    <!-- ==================== VIEW 2: DESIGN TOKENS & COMPONENT WORKBENCH ==================== -->
+    <div id="viewTokens" class="hidden space-y-6">
+
+      <!-- Tokens Summary Header -->
+      <div class="bg-slate-900 border border-slate-700 rounded-2xl p-4">
+        <h2 class="text-lg font-black text-white">🎨 System Component Library & Design Tokens</h2>
+        <p class="text-xs text-slate-400 mt-1">Coded components designed for extreme clarity under stress, offline availability, low literacy, and color-blind safety.</p>
+      </div>
+
+      <!-- COMPONENT 1: EMERGENCY SOS BUTTON VARIATION -->
+      <div class="bg-slate-900 border border-slate-700 rounded-2xl p-4 space-y-3">
+        <h3 class="text-xs font-black tracking-wider text-slate-400 uppercase">1. Emergency SOS Button (<code class="text-red-400">&lt;EmergencyButton /&gt;</code>)</h3>
+        <p class="text-xs text-slate-300">Persistent floating/anchor entry point on every screen. Single-tap to open emergency triage; 3-second hold to sound distress beacon.</p>
+        <div class="flex flex-wrap items-center gap-4 bg-[#0B0F19] p-4 rounded-xl border border-slate-800 justify-center">
+          <button class="relative bg-red-600 text-white font-black rounded-full px-6 py-4 flex items-center gap-3 text-lg border-2 border-red-400 shadow-2xl animate-sos-pulse">
+            <span class="text-2xl">🚨</span>
+            <span>SOS EMERGENCY</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- COMPONENT 2: SEVERITY BADGES (COLOR BLIND SAFE SHAPES + COLORS) -->
+      <div class="bg-slate-900 border border-slate-700 rounded-2xl p-4 space-y-3">
+        <h3 class="text-xs font-black tracking-wider text-slate-400 uppercase">2. Severity Badges (<code class="text-amber-400">&lt;SeverityBadge /&gt;</code>)</h3>
+        <p class="text-xs text-slate-300">Pairs color-coded status with explicit geometric shapes and icons for color-blind accessibility.</p>
+        <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 bg-[#0B0F19] p-4 rounded-xl border border-slate-800">
+          
+          <!-- Critical Badge -->
+          <div class="bg-red-950 border-2 border-red-500 rounded-xl p-3 text-center space-y-1">
+            <span class="inline-block px-3 py-1 rounded-md bg-red-600 text-white font-black text-xs">🛑 CRITICAL (OCTAGON)</span>
+            <p class="text-[11px] text-red-200">CPR, Heavy Bleeding, Unconscious</p>
+          </div>
+
+          <!-- Urgent Badge -->
+          <div class="bg-amber-950 border-2 border-amber-500 rounded-xl p-3 text-center space-y-1">
+            <span class="inline-block px-3 py-1 rounded-md bg-amber-600 text-white font-black text-xs">🔶 URGENT (DIAMOND)</span>
+            <p class="text-[11px] text-amber-200">Burns, Fractures, Snake Bites</p>
+          </div>
+
+          <!-- Stable Badge -->
+          <div class="bg-emerald-950 border-2 border-emerald-500 rounded-xl p-3 text-center space-y-1">
+            <span class="inline-block px-3 py-1 rounded-md bg-emerald-600 text-white font-black text-xs">🟢 STABLE (CIRCLE)</span>
+            <p class="text-[11px] text-emerald-200">Minor Wounds, Bandaged</p>
+          </div>
+
+        </div>
+      </div>
+
+      <!-- COMPONENT 3: VOICE INTERACTION CONSOLE STATES -->
+      <div class="bg-slate-900 border border-slate-700 rounded-2xl p-4 space-y-3">
+        <h3 class="text-xs font-black tracking-wider text-slate-400 uppercase">3. Voice Console States (<code class="text-purple-400">&lt;VoiceConsole /&gt;</code>)</h3>
+        <div class="grid grid-cols-2 gap-3 bg-[#0B0F19] p-4 rounded-xl border border-slate-800">
+          
+          <!-- IDLE STATE -->
+          <div class="bg-slate-900 border border-blue-500/50 p-3 rounded-xl text-center space-y-2">
+            <div class="w-12 h-12 rounded-full bg-blue-600 text-white text-xl flex items-center justify-center mx-auto">🎤</div>
+            <span class="block text-xs font-bold text-blue-400">STATE: IDLE</span>
+            <span class="text-[10px] text-slate-400 block">Tap to Speak Command</span>
+          </div>
+
+          <!-- LISTENING STATE -->
+          <div class="bg-purple-950/60 border border-purple-500 p-3 rounded-xl text-center space-y-2">
+            <div class="w-12 h-12 rounded-full bg-purple-600 text-white text-xl flex items-center justify-center mx-auto animate-wave-pulse">🎙️</div>
+            <span class="block text-xs font-bold text-purple-300">STATE: LISTENING</span>
+            <span class="text-[10px] text-purple-200 block">Audio Waves Active</span>
+          </div>
+
+          <!-- PROCESSING STATE -->
+          <div class="bg-pink-950/60 border border-pink-500 p-3 rounded-xl text-center space-y-2">
+            <div class="w-12 h-12 rounded-full bg-pink-600 text-white text-xl flex items-center justify-center mx-auto animate-spin">⚙️</div>
+            <span class="block text-xs font-bold text-pink-300">STATE: PROCESSING</span>
+            <span class="text-[10px] text-pink-200 block">Offline NLU Speech Model</span>
+          </div>
+
+          <!-- SPEAKING STATE -->
+          <div class="bg-emerald-950/60 border border-emerald-500 p-3 rounded-xl text-center space-y-2">
+            <div class="h-12 flex items-center justify-center gap-1">
+              <div class="eq-bar"></div>
+              <div class="eq-bar"></div>
+              <div class="eq-bar"></div>
+              <div class="eq-bar"></div>
+              <div class="eq-bar"></div>
+            </div>
+            <span class="block text-xs font-bold text-emerald-300">STATE: SPEAKING</span>
+            <span class="text-[10px] text-emerald-200 block">Narration Output Active</span>
+          </div>
+
+        </div>
+      </div>
+
+      <!-- COMPONENT 4: OFFLINE & SYNC INDICATOR -->
+      <div class="bg-slate-900 border border-slate-700 rounded-2xl p-4 space-y-3">
+        <h3 class="text-xs font-black tracking-wider text-slate-400 uppercase">4. Offline & Sync Indicator (<code class="text-emerald-400">&lt;OfflineSyncIndicator /&gt;</code>)</h3>
+        <div class="space-y-2 bg-[#0B0F19] p-4 rounded-xl border border-slate-800">
+          <div class="flex items-center justify-between p-3 rounded-xl bg-emerald-950/80 border border-emerald-500/60">
+            <span class="text-xs font-bold text-emerald-300">⚡ 100% Offline Ready</span>
+            <span class="text-[10px] text-emerald-400 bg-emerald-900 px-2 py-0.5 rounded">All Guides Local</span>
+          </div>
+          <div class="flex items-center justify-between p-3 rounded-xl bg-blue-950/80 border border-blue-500/60">
+            <span class="text-xs font-bold text-blue-300">🌐 Online • Background Syncing</span>
+            <span class="text-[10px] text-blue-400 bg-blue-900 px-2 py-0.5 rounded animate-pulse">Non-blocking</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- RAW DESIGN TOKENS JSON INSPECTOR -->
+      <div class="bg-slate-900 border border-slate-700 rounded-2xl p-4 space-y-3">
+        <div class="flex items-center justify-between">
+          <h3 class="text-xs font-black tracking-wider text-slate-400 uppercase">Raw JSON Tokens (<code class="text-blue-400">design-tokens.json</code>)</h3>
+          <button onclick="copyTokensJson()" class="px-2.5 py-1 rounded bg-slate-800 text-slate-300 text-xs font-bold border border-slate-600 hover:bg-slate-700">
+            Copy JSON
+          </button>
+        </div>
+        <pre class="bg-[#0B0F19] text-emerald-400 p-4 rounded-xl border border-slate-800 text-[11px] overflow-x-auto max-h-60 font-mono">
+{
+  "theme": "dark-default",
+  "touchTarget": { "sos": "84px", "mic": "76px", "stepAction": "64px" },
+  "severity": {
+    "critical": { "hex": "#DC2626", "shape": "octagon" },
+    "urgent": { "hex": "#D97706", "shape": "diamond" },
+    "stable": { "hex": "#16A34A", "shape": "circle" }
+  },
+  "voiceState": ["idle", "listening", "processing", "speaking"],
+  "accessibility": { "wcagAAA": true, "largeTextScale": "120%", "rtlSupport": true }
+}
+        </pre>
+      </div>
+
+    </div>
+
+  </main>
+
+  <!-- ==================== FIXED BOTTOM VOICE & SOS CONSOLE ==================== -->
+  <div class="fixed bottom-0 inset-x-0 z-50 bg-[#151C2C]/95 backdrop-blur-md border-t border-slate-700 p-3 shadow-2xl">
+    <div class="max-w-xl mx-auto flex items-center justify-between gap-3">
+      
+      <!-- Voice Mic Button (76px touch target) -->
+      <button onclick="handleMicClick()" id="micConsoleBtn" class="flex-1 h-16 rounded-2xl bg-blue-600 hover:bg-blue-500 border-2 border-blue-400 text-white font-black text-base flex items-center justify-center gap-2 shadow-xl active:scale-95 transition-all">
+        <span id="micIcon" class="text-2xl">🎤</span>
+        <div class="text-left">
+          <span id="micStateTitle" class="block text-xs font-black uppercase tracking-wider">VOICE ASSISTANT</span>
+          <span id="micStateDesc" class="block text-[10px] text-blue-200">Tap & Speak "Help"</span>
+        </div>
+      </button>
+
+      <!-- Giant Floating Red SOS Emergency Anchor (84px touch target) -->
+      <button onclick="triggerSosModal()" aria-label="Emergency SOS" class="w-16 h-16 rounded-2xl bg-red-600 hover:bg-red-500 border-2 border-red-300 text-white font-black text-sm flex flex-col items-center justify-center shadow-2xl animate-sos-pulse active:scale-90 transition-transform shrink-0">
+        <span class="text-xl leading-none">🚨</span>
+        <span class="text-[10px] font-black tracking-tighter">SOS</span>
+      </button>
+
+    </div>
+  </div>
+
+  <!-- VOICE STATE TOAST / FEEDBACK OVERLAY (TRIGGERED ON MIC CLICK) -->
+  <div id="voiceToast" class="fixed top-16 inset-x-4 max-w-sm mx-auto z-50 hidden bg-purple-950 border-2 border-purple-400 rounded-2xl p-4 text-white shadow-2xl flex items-center gap-3 animate-bounce">
+    <div class="w-10 h-10 rounded-full bg-purple-600 flex items-center justify-center text-xl animate-pulse">
+      🎙️
+    </div>
+    <div class="flex-1">
+      <span id="voiceToastTitle" class="block font-black text-sm text-purple-200">LISTENING...</span>
+      <span id="voiceToastSub" class="block text-xs text-purple-300">"Say 'Stop Bleeding' or 'CPR'"</span>
+    </div>
+    <button onclick="hideVoiceToast()" class="text-xs text-purple-300 font-bold px-2 py-1">✕</button>
+  </div>
+
+  <!-- SOS EMERGENCY MODAL OVERLAY -->
+  <div id="sosModal" class="fixed inset-0 z-50 hidden bg-black/90 backdrop-blur-lg flex items-center justify-center p-4">
+    <div class="bg-red-950 border-4 border-red-600 rounded-3xl p-6 max-w-md w-full text-center space-y-4 shadow-2xl animate-sos-pulse">
+      <div class="w-20 h-20 rounded-full bg-red-600 text-white text-4xl flex items-center justify-center mx-auto shadow-inner">
+        🚨
+      </div>
+      <h2 class="text-3xl font-black text-white uppercase tracking-tight">CRITICAL SOS</h2>
+      <p class="text-sm font-bold text-red-200">Emergency First Aid Priority Triage Activated.</p>
+      
+      <div class="space-y-2 pt-2">
+        <button onclick="openWizard('cpr'); hideSosModal();" class="w-full py-4 rounded-2xl bg-red-600 text-white font-black text-lg border-2 border-red-300 shadow-xl active:scale-95">
+          🫀 CPR / NOT BREATHING
+        </button>
+        <button onclick="openWizard('bleeding'); hideSosModal();" class="w-full py-4 rounded-2xl bg-red-700 text-white font-black text-lg border-2 border-red-400 shadow-xl active:scale-95">
+          🩸 HEAVY UNCONTROLLED BLEEDING
+        </button>
+        <button onclick="simulateBeaconAlert()" class="w-full py-3 rounded-xl bg-amber-600 text-white font-bold text-sm border border-amber-300">
+          🔊 SOUND LOCAL DISTRESS SIREN
+        </button>
+      </div>
+
+      <button onclick="hideSosModal()" class="w-full py-2.5 rounded-xl bg-slate-800 text-slate-300 font-bold text-xs border border-slate-600">
+        CANCEL / CLOSE SOS
+      </button>
+    </div>
+  </div>
+
+  <!-- JAVASCRIPT APP LOGIC & MULTI-LINGUAL DATA -->
+  <script>
+    // Multi-Lingual Translations Database
+    const translations = {
+      en: {
+        dir: 'ltr',
+        emergencyGuide: 'EMERGENCY FIRST AID',
+        selectEmergency: 'Tap What Happened',
+        subTitle: 'Remote Emergency Assistant',
+        offlineFooter: 'All medical guides are pre-stored locally. Zero internet required.',
+        cprTitle: 'CPR / BREATHING',
+        cprDesc: 'Unconscious • Not Breathing',
+        bleedTitle: 'HEAVY BLEEDING',
+        bleedDesc: 'Deep Wounds • Gushing',
+        chokeTitle: 'CHOKING',
+        chokeDesc: 'Blocked Airway • Silent',
+        burnTitle: 'BURNS',
+        burnDesc: 'Fire • Chemical • Scald',
+        fracTitle: 'BROKEN BONE',
+        fracDesc: 'Sprain • Deformed Limb',
+        bitesTitle: 'BITES & POISON',
+        bitesDesc: 'Snake • Insect • Chemical',
+        back: 'BACK',
+        read: 'READ',
+        nextStep: 'NEXT STEP',
+        finishStep: 'FINISHED / STABLE'
+      },
+      sw: {
+        dir: 'ltr',
+        emergencyGuide: 'HUDUMA YA KWANZA YA DHARURA',
+        selectEmergency: 'Gusa Kilichotokea',
+        subTitle: 'Msaidizi wa Dharura Nje ya Mtandao',
+        offlineFooter: 'Mwongozo wote umehifadhiwa kikamilifu. Hauhitaji intaneti.',
+        cprTitle: 'CPR / KUPUMUA',
+        cprDesc: 'Hajitambui • Hapumui',
+        bleedTitle: 'DUGU NYINGI',
+        bleedDesc: 'Majeraha Makubwa • Kuvuja',
+        chokeTitle: 'KUKABWA',
+        chokeDesc: 'Njia ya Hewa Imeziba',
+        burnTitle: 'MAJERAHA YA MOTO',
+        burnDesc: 'Moto • Kemikali',
+        fracTitle: 'MFUPA ULIOWATIKA',
+        fracDesc: 'Kuteguka • Mfupa Uliovunjika',
+        bitesTitle: 'KUNG\'ATWA NA SUMU',
+        bitesDesc: 'Nyoka • Wadudu • Sumu',
+        back: 'RUDI',
+        read: 'SOMA',
+        nextStep: 'HATUA IFUATAYO',
+        finishStep: 'MALIZA'
+      },
+      ar: {
+        dir: 'rtl',
+        emergencyGuide: 'الإسعافات الأولية الإمرجنسي',
+        selectEmergency: 'اضغط على نوع الطوارئ',
+        subTitle: 'مساعد الطوارئ يعمل بدون إنترنت',
+        offlineFooter: 'جميع الإرشادات الطبية محفظة محلياً بالكامل. لا يتطلب إنترنت.',
+        cprTitle: 'الإنعاش القلبي / التنفس',
+        cprDesc: 'فاقد الوعي • لا يتنفس',
+        bleedTitle: 'نزيف حاد',
+        bleedDesc: 'جروح عميقة • تدفق الدم',
+        chokeTitle: 'اختناق',
+        chokeDesc: 'انسداد مجرى الهواء',
+        burnTitle: 'حروق',
+        burnDesc: 'نار • مواد كيميائية',
+        fracTitle: 'كسور العظام',
+        fracDesc: 'التواء • كسر العظم',
+        bitesTitle: 'لدغات وسموم',
+        bitesDesc: 'أفاعي • حشرات • سموم',
+        back: 'رجوع',
+        read: 'قراءة',
+        nextStep: 'الخطوة التالية',
+        finishStep: 'إكمال / استقرار'
+      },
+      hi: {
+        dir: 'ltr',
+        emergencyGuide: 'आपतकालीन प्राथमिक चिकित्सा',
+        selectEmergency: 'क्या हुआ है उस पर टैप करें',
+        subTitle: 'ऑफलाइन आपातकालीन सहायक',
+        offlineFooter: 'सभी चिकित्सा निर्देश स्थानीय रूप से सहेजे गए हैं।',
+        cprTitle: 'सीपीआर / सांस लेना',
+        cprDesc: 'बेहोश • सांस नहीं ले रहा',
+        bleedTitle: 'तेज खून बहना',
+        bleedDesc: 'गहरे घाव • खून बहना',
+        chokeTitle: 'दम घुटना',
+        chokeDesc: 'सांस की नली बंद',
+        burnTitle: 'जलना',
+        burnDesc: 'आग • रसायन',
+        fracTitle: 'हड्डी टूटना',
+        fracDesc: 'मोच • टूटी हुई हड्डी',
+        bitesTitle: 'काटना और जहर',
+        bitesDesc: 'सांप • कीड़े',
+        back: 'पीछे',
+        read: 'बोलकर सुनें',
+        nextStep: 'अगला कदम',
+        finishStep: 'समाप्त'
+      },
+      es: {
+        dir: 'ltr',
+        emergencyGuide: 'PRIMEROS AUXILIOS DE EMERGENCIA',
+        selectEmergency: 'Toque lo que sucedió',
+        subTitle: 'Asistente de Emergencia Offline',
+        offlineFooter: 'Todas las guías están guardadas localmente. Sin internet.',
+        cprTitle: 'RCP / RESPIRACIÓN',
+        cprDesc: 'Inconsciente • No respira',
+        bleedTitle: 'SANGRADO GRAVE',
+        bleedDesc: 'Heridas profundas',
+        chokeTitle: 'ATRAGANTAMIENTO',
+        chokeDesc: 'Vía aérea bloqueada',
+        burnTitle: 'QUEMADURAS',
+        burnDesc: 'Fuego • Químicos',
+        fracTitle: 'FRACTURA',
+        fracDesc: 'Esguince • Hueso roto',
+        bitesTitle: 'PICADURAS Y VENENO',
+        bitesDesc: 'Serpiente • Insecto',
+        back: 'VOLVER',
+        read: 'LEER',
+        nextStep: 'SIGUIENTE PASO',
+        finishStep: 'FINALIZAR'
+      }
+    };
+
+    // First Aid Guided Wizard Step Data
+    const wizardData = {
+      cpr: {
+        severity: 'CRITICAL',
+        severityHex: 'bg-red-600',
+        steps: [
+          {
+            title: "Place Hands in Center of Chest",
+            desc: "Interlock fingers. Position heel of hand on center of breastbone. Keep arms straight.",
+            svg: `<svg class="w-36 h-36 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.684a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"></path></svg>`,
+            showMetronome: true
+          },
+          {
+            title: "Push Hard & Fast (30 Times)",
+            desc: "Press down 5cm (2 inches) at 100-120 beats per minute. Match rhythm with the pulse metronome below.",
+            svg: `<svg class="w-36 h-36 text-red-400 animate-cpr-beat" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path></svg>`,
+            showMetronome: true
+          },
+          {
+            title: "Give 2 Rescue Breaths",
+            desc: "Tilt head back, pinch nose shut, cover their mouth with yours, blow steadily for 1 second twice.",
+            svg: `<svg class="w-36 h-36 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"></path></svg>`,
+            showMetronome: false
+          }
+        ]
+      },
+      bleeding: {
+        severity: 'CRITICAL',
+        severityHex: 'bg-red-600',
+        steps: [
+          {
+            title: "Apply Direct Firm Pressure Now",
+            desc: "Place a clean cloth or bandage directly over the wound. Press down hard with both hands.",
+            svg: `<svg class="w-36 h-36 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9" stroke-width="2"></circle><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v8m-4-4h8"></path></svg>`,
+            showMetronome: false
+          },
+          {
+            title: "Elevate Wound Above Heart",
+            desc: "Keep pressing firmly. Lift the bleeding arm or leg up above heart level if no bone is broken.",
+            svg: `<svg class="w-36 h-36 text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 10l7-7m0 0l7 7m-7-7v18"></path></svg>`,
+            showMetronome: false
+          },
+          {
+            title: "Wrap Tight Bandage & Hold Firm",
+            desc: "Secure cloth tightly with bandage wrap. Do NOT remove cloth even if soaked; add more layers on top.",
+            svg: `<svg class="w-36 h-36 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"></path></svg>`,
+            showMetronome: false
+          }
+        ]
+      },
+      choking: {
+        severity: 'URGENT',
+        severityHex: 'bg-amber-600',
+        steps: [
+          {
+            title: "Give 5 Sharp Back Blows",
+            desc: "Lean person forward. Deliver 5 firm slaps between shoulder blades with heel of hand.",
+            svg: `<svg class="w-36 h-36 text-amber-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 11.5V14m0-2.5v-6a1.5 1.5 0 113 0m-3 6a1.5 1.5 0 00-3 0v2a7.5 7.5 0 0015 0v-5a1.5 1.5 0 00-3 0m-6-3V11m0-5.5a1.5 1.5 0 013 0v5m0 0V11"></path></svg>`,
+            showMetronome: false
+          },
+          {
+            title: "Perform 5 Abdominal Thrusts (Heimlich)",
+            desc: "Stand behind person. Wrap arms around waist. Make fist above belly button and pull inward & upward sharply.",
+            svg: `<svg class="w-36 h-36 text-amber-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path></svg>`,
+            showMetronome: false
+          }
+        ]
+      },
+      burns: {
+        severity: 'URGENT',
+        severityHex: 'bg-amber-600',
+        steps: [
+          {
+            title: "Cool Burn under Cold Water Immediately",
+            desc: "Hold burn under cool running water for at least 10 to 20 minutes. Do NOT use ice or butter.",
+            svg: `<svg class="w-36 h-36 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 8H9L8 4z"></path></svg>`,
+            showMetronome: false
+          },
+          {
+            title: "Cover Loosely with Clean Plastic Wrap",
+            desc: "Cover burn gently with clean plastic wrap or sterile non-stick cloth. Do NOT pop blisters.",
+            svg: `<svg class="w-36 h-36 text-amber-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>`,
+            showMetronome: false
+          }
+        ]
+      }
+    };
+
+    // State Variables
+    let currentLang = 'en';
+    let currentCategory = null;
+    let currentStepIndex = 0;
+    let voiceConsoleState = 'idle'; // idle, listening, processing, speaking
+    let isLargeFont = false;
+    let metronomeAudioActive = true;
+    let audioMetronomeInterval = null;
+
+    // Change Language & RTL Switcher
+    function changeLanguage(langCode) {
+      currentLang = langCode;
+      const t = translations[langCode] || translations.en;
+      
+      // Update Text Direction
+      document.documentElement.setAttribute('dir', t.dir);
+      
+      // Update UI Text Labels
+      document.getElementById('lblEmergencyGuide').innerText = t.emergencyGuide;
+      document.getElementById('lblSelectEmergency').innerText = t.selectEmergency;
+      document.getElementById('subTitleText').innerText = t.subTitle;
+      document.getElementById('lblOfflineFooter').innerText = t.offlineFooter;
+
+      document.getElementById('catCprTitle').innerText = t.cprTitle;
+      document.getElementById('catCprDesc').innerText = t.cprDesc;
+      document.getElementById('catBleedTitle').innerText = t.bleedTitle;
+      document.getElementById('catBleedDesc').innerText = t.bleedDesc;
+      document.getElementById('catChokeTitle').innerText = t.chokeTitle;
+      document.getElementById('catChokeDesc').innerText = t.chokeDesc;
+      document.getElementById('catBurnTitle').innerText = t.burnTitle;
+      document.getElementById('catBurnDesc').innerText = t.burnDesc;
+      document.getElementById('catFracTitle').innerText = t.fracTitle;
+      document.getElementById('catFracDesc').innerText = t.fracDesc;
+      document.getElementById('catBitesTitle').innerText = t.bitesTitle;
+      document.getElementById('catBitesDesc').innerText = t.bitesDesc;
+
+      document.getElementById('btnBack').innerText = t.back;
+      document.getElementById('btnReadAloud').innerText = t.read;
+      document.getElementById('lblNextBtnText').innerText = t.nextStep;
+    }
+
+    // Toggle Large Accessibility Font Scale
+    function toggleLargeFont() {
+      isLargeFont = !isLargeFont;
+      document.body.classList.toggle('large-text-mode', isLargeFont);
+      document.getElementById('fontBtn').classList.toggle('bg-red-600', isLargeFont);
+    }
+
+    // View Switcher (App vs Tokens Workbench)
+    function switchView(viewName) {
+      if (viewName === 'app') {
+        document.getElementById('viewApp').classList.remove('hidden');
+        document.getElementById('viewTokens').classList.add('hidden');
+        document.getElementById('tabAppBtn').className = "flex-1 py-2.5 px-3 rounded-xl font-bold text-xs border transition-all text-center bg-red-600 border-red-500 text-white shadow-md";
+        document.getElementById('tabTokensBtn').className = "flex-1 py-2.5 px-3 rounded-xl font-bold text-xs border transition-all text-center bg-slate-800 border-slate-700 text-slate-300 hover:bg-slate-700";
+      } else {
+        document.getElementById('viewApp').classList.add('hidden');
+        document.getElementById('viewTokens').classList.remove('hidden');
+        document.getElementById('tabTokensBtn').className = "flex-1 py-2.5 px-3 rounded-xl font-bold text-xs border transition-all text-center bg-red-600 border-red-500 text-white shadow-md";
+        document.getElementById('tabAppBtn').className = "flex-1 py-2.5 px-3 rounded-xl font-bold text-xs border transition-all text-center bg-slate-800 border-slate-700 text-slate-300 hover:bg-slate-700";
+      }
+    }
+
+    // Wizard Functions
+    function openWizard(catKey) {
+      currentCategory = catKey;
+      currentStepIndex = 0;
+      document.getElementById('appScreenHome').classList.add('hidden');
+      document.getElementById('appScreenWizard').classList.remove('hidden');
+      renderWizardStep();
+    }
+
+    function closeWizard() {
+      stopMetronomeAudio();
+      document.getElementById('appScreenWizard').classList.add('hidden');
+      document.getElementById('appScreenHome').classList.remove('hidden');
+    }
+
+    function renderWizardStep() {
+      const wizard = wizardData[currentCategory] || wizardData.cpr;
+      const step = wizard.steps[currentStepIndex];
+      const totalSteps = wizard.steps.length;
+
+      document.getElementById('wizStepNumber').innerText = `STEP ${currentStepIndex + 1} OF ${totalSteps}`;
+      document.getElementById('wizStepTitle').innerText = step.title;
+      document.getElementById('wizStepDescription').innerText = step.desc;
+      document.getElementById('wizIllustrationBox').querySelector('svg')?.remove();
+      document.getElementById('wizIllustrationBox').insertAdjacentHTML('afterbegin', step.svg);
+
+      // Metronome Pacing
+      const metronomeBox = document.getElementById('cprMetronomeBox');
+      if (step.showMetronome) {
+        metronomeBox.classList.remove('hidden');
+        startMetronomeAudio();
+      } else {
+        metronomeBox.classList.add('hidden');
+        stopMetronomeAudio();
+      }
+
+      // Dots Indicator
+      const dotsContainer = document.getElementById('wizDots');
+      dotsContainer.innerHTML = '';
+      for (let i = 0; i < totalSteps; i++) {
+        const dot = document.createElement('span');
+        dot.className = i === currentStepIndex 
+          ? "w-6 h-2 rounded-full bg-red-500 transition-all" 
+          : "w-2 h-2 rounded-full bg-slate-700";
+        dotsContainer.appendChild(dot);
+      }
+
+      // Next / Finish Button
+      const t = translations[currentLang] || translations.en;
+      if (currentStepIndex === totalSteps - 1) {
+        document.getElementById('lblNextBtnText').innerText = t.finishStep;
+      } else {
+        document.getElementById('lblNextBtnText').innerText = t.nextStep;
+      }
+
+      // Read aloud automatically if narration is enabled
+      speakCurrentStep();
+    }
+
+    function nextStep() {
+      const wizard = wizardData[currentCategory] || wizardData.cpr;
+      if (currentStepIndex < wizard.steps.length - 1) {
+        currentStepIndex++;
+        renderWizardStep();
+      } else {
+        closeWizard();
+      }
+    }
+
+    function prevStep() {
+      if (currentStepIndex > 0) {
+        currentStepIndex--;
+        renderWizardStep();
+      }
+    }
+
+    // Audio Metronome Simulation (Web Audio API Synth Click)
+    function startMetronomeAudio() {
+      if (audioMetronomeInterval) clearInterval(audioMetronomeInterval);
+      audioMetronomeInterval = setInterval(() => {
+        if (!metronomeAudioActive) return;
+        try {
+          const ctx = new (window.AudioContext || window.webkitAudioContext)();
+          const osc = ctx.createOscillator();
+          const gain = ctx.createGain();
+          osc.type = 'sine';
+          osc.frequency.setValueAtTime(800, ctx.currentTime);
+          gain.gain.setValueAtTime(0.15, ctx.currentTime);
+          gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.05);
+          osc.connect(gain);
+          gain.connect(ctx.destination);
+          osc.start();
+          osc.stop(ctx.currentTime + 0.05);
+        } catch(e){}
+      }, 545); // ~110 BPM
+    }
+
+    function stopMetronomeAudio() {
+      if (audioMetronomeInterval) clearInterval(audioMetronomeInterval);
+    }
+
+    function toggleMetronomeAudio() {
+      metronomeAudioActive = !metronomeAudioActive;
+      document.getElementById('btnMetronomeSound').innerText = metronomeAudioActive ? "🔊 SOUND: ON" : "🔇 SOUND: OFF";
+    }
+
+    // Speech Narration Readout
+    function speakCurrentStep() {
+      const stepTitle = document.getElementById('wizStepTitle')?.innerText || "";
+      const stepDesc = document.getElementById('wizStepDescription')?.innerText || "";
+      const textToSpeak = `${stepTitle}. ${stepDesc}`;
+
+      if ('speechSynthesis' in window) {
+        window.speechSynthesis.cancel();
+        const utterance = new SpeechSynthesisUtterance(textToSpeak);
+        utterance.rate = 0.9; // Slightly slower for clarity
+        window.speechSynthesis.speak(utterance);
+      }
+
+      // Visual Voice Console State indicator update to SPEAKING
+      setVoiceState('speaking', textToSpeak);
+    }
+
+    // Voice Mic Console State Machine
+    function handleMicClick() {
+      if (voiceConsoleState === 'idle') {
+        setVoiceState('listening', 'Listening for emergency commands...');
+        showVoiceToast('LISTENING...', 'Say "Stop Bleeding", "CPR", or "Burns"');
+        
+        // Simulate NLU transition
+        setTimeout(() => {
+          setVoiceState('processing', 'Understanding audio...');
+          document.getElementById('voiceToastTitle').innerText = "PROCESSING...";
+          document.getElementById('voiceToastSub').innerText = "Analyzing offline intent...";
+        }, 2200);
+
+        setTimeout(() => {
+          hideVoiceToast();
+          openWizard('cpr');
+          setVoiceState('speaking', 'Opening CPR First Aid Guide.');
+        }, 3800);
+
+      } else {
+        setVoiceState('idle', 'Tap & Speak "Help"');
+        hideVoiceToast();
+        if ('speechSynthesis' in window) window.speechSynthesis.cancel();
+      }
+    }
+
+    function setVoiceState(state, descText) {
+      voiceConsoleState = state;
+      const btn = document.getElementById('micConsoleBtn');
+      const icon = document.getElementById('micIcon');
+      const desc = document.getElementById('micStateDesc');
+
+      if (state === 'idle') {
+        btn.className = "flex-1 h-16 rounded-2xl bg-blue-600 hover:bg-blue-500 border-2 border-blue-400 text-white font-black text-base flex items-center justify-center gap-2 shadow-xl active:scale-95 transition-all";
+        icon.innerText = "🎤";
+        desc.innerText = descText || 'Tap & Speak "Help"';
+      } else if (state === 'listening') {
+        btn.className = "flex-1 h-16 rounded-2xl bg-purple-600 border-2 border-purple-300 text-white font-black text-base flex items-center justify-center gap-2 shadow-xl animate-wave-pulse";
+        icon.innerText = "🎙️";
+        desc.innerText = "Listening...";
+      } else if (state === 'processing') {
+        btn.className = "flex-1 h-16 rounded-2xl bg-pink-600 border-2 border-pink-300 text-white font-black text-base flex items-center justify-center gap-2 shadow-xl";
+        icon.innerText = "⚙️";
+        desc.innerText = "Understanding...";
+      } else if (state === 'speaking') {
+        btn.className = "flex-1 h-16 rounded-2xl bg-emerald-600 border-2 border-emerald-300 text-white font-black text-base flex items-center justify-center gap-2 shadow-xl";
+        icon.innerText = "🔊";
+        desc.innerText = "Speaking Narration...";
+      }
+    }
+
+    function simulateVoiceTrigger(catKey) {
+      handleMicClick();
+    }
+
+    function showVoiceToast(title, sub) {
+      const toast = document.getElementById('voiceToast');
+      document.getElementById('voiceToastTitle').innerText = title;
+      document.getElementById('voiceToastSub').innerText = sub;
+      toast.classList.remove('hidden');
+    }
+
+    function hideVoiceToast() {
+      document.getElementById('voiceToast').classList.add('hidden');
+    }
+
+    // SOS Modal Functions
+    function triggerSosModal() {
+      document.getElementById('sosModal').classList.remove('hidden');
+    }
+
+    function hideSosModal() {
+      document.getElementById('sosModal').classList.add('hidden');
+    }
+
+    function simulateBeaconAlert() {
+      alert("🔊 DISTRESS BEACON ACTIVATED: Emitting local siren and high-frequency audio pulse for nearby responders.");
+    }
+
+    function copyTokensJson() {
+      const tokensText = `{
+  "theme": "dark-default",
+  "touchTarget": { "sos": "84px", "mic": "76px", "stepAction": "64px" },
+  "severity": {
+    "critical": { "hex": "#DC2626", "shape": "octagon" },
+    "urgent": { "hex": "#D97706", "shape": "diamond" },
+    "stable": { "hex": "#16A34A", "shape": "circle" }
+  },
+  "voiceState": ["idle", "listening", "processing", "speaking"],
+  "accessibility": { "wcagAAA": true, "largeTextScale": "120%", "rtlSupport": true }
+}`;
+      navigator.clipboard.writeText(tokensText);
+      alert("JSON Design Tokens copied to clipboard!");
+    }
+  </script>
+</body>
+</html>

@@ -1,0 +1,96 @@
+[
+  {
+    "id": 101,
+    "task": {
+      "id": 501,
+      "data": {
+        "source_document": "WHO Guidelines for Management of Snakebites",
+        "document_version": "2.1.0-2025",
+        "section": "Section 4.2 - Neurotoxic Envenomation",
+        "raw_protocol_text": "Keep victim calm. Splint limb. Do NOT cut or suck. Transport to antivenom facility."
+      }
+    },
+    "annotations": [
+      {
+        "id": 901,
+        "completed_by": {
+          "email": "dr.mendoza@firstaid-review.org",
+          "id": 8842
+        },
+        "result": [
+          {
+            "from_name": "symptom_description",
+            "to_name": "text",
+            "type": "textarea",
+            "value": { "text": ["Patient was bitten by a dark snake on foot and feels eyelids drooping."] }
+          },
+          {
+            "from_name": "clarifying_questions",
+            "to_name": "text",
+            "type": "textarea",
+            "value": { "text": ["Are they having difficulty swallowing or breathing? Is the limb swelling rapidly?"] }
+          },
+          {
+            "from_name": "clinician_response",
+            "to_name": "text",
+            "type": "textarea",
+            "value": { "text": ["CRITICAL NEUROTOXIC SNAKEBITE: 1. Keep completely still. 2. Splint the bitten leg. 3. Transport immediately to antivenom center."] }
+          },
+          {
+            "from_name": "approval_status",
+            "to_name": "choice",
+            "type": "choices",
+            "value": { "choices": ["CLINICALLY_APPROVED"] }
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": 102,
+    "task": {
+      "id": 502,
+      "data": {
+        "source_document": "IFRC International First Aid Guidelines",
+        "document_version": "3.0.0-2025",
+        "section": "Chapter 8 - Environmental Emergencies",
+        "raw_protocol_text": "Cool heatstroke victims rapidly with water, aggressive fanning, and ice packs to neck/groin."
+      }
+    },
+    "annotations": [
+      {
+        "id": 902,
+        "completed_by": {
+          "email": "dr.karanja@redcross.org",
+          "id": 7731
+        },
+        "result": [
+          {
+            "from_name": "symptom_description",
+            "to_name": "text",
+            "type": "textarea",
+            "value": { "text": ["Worker collapsed in hot field, skin hot and dry, confused."] }
+          },
+          {
+            "from_name": "clarifying_questions",
+            "to_name": "text",
+            "type": "textarea",
+            "value": { "text": ["Are they sweating? Can they drink water?"] }
+          },
+          {
+            "from_name": "clinician_response",
+            "to_name": "text",
+            "type": "textarea",
+            "value": { "text": ["HEATSTROKE EMERGENCY: 1. Move to shade. 2. Pour cool water over skin & fan aggressively. 3. Apply ice packs to neck & groin."] }
+          },
+          {
+            "from_name": "approval_status",
+            "to_name": "choice",
+            "type": "choices",
+            "value": { "choices": ["CLINICALLY_APPROVED"] }
+          }
+        ]
+      }
+    ]
+  }
+]

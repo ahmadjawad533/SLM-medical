@@ -1,0 +1,9 @@
+stages:
+  prepare_dataset:
+    cmd: python3 scripts/prepare_medical_dataset.py data/sample_label_studio_export.json
+    deps:
+      - scripts/prepare_medical_dataset.py
+      - data/sample_label_studio_export.json
+    outs:
+      - data/processed/finetune_instruction_dataset.jsonl
+      - data/processed/rag_knowledge_base.jsonl

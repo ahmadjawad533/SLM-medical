@@ -1,0 +1,46 @@
+name: slm_medical
+description: Offline-First Emergency First-Aid Mobile and Edge Application with embedded quantized LLM, local RAG knowledge base, and rule-based safety triage.
+publish_to: 'none'
+version: 1.0.0+1
+
+environment:
+  sdk: '>=3.2.0 <4.0.0'
+  flutter: ">=3.16.0"
+
+dependencies:
+  flutter:
+    sdk: flutter
+  flutter_localizations:
+    sdk: flutter
+
+  # State Management & DI
+  flutter_riverpod: ^2.4.9
+  
+  # FFI & Native C++ Bindings (llama.cpp, whisper.cpp)
+  ffi: ^2.1.0
+  path_provider: ^2.1.2
+  path: ^1.8.3
+
+  # Local Vector Store & SQLite
+  sqflite: ^2.3.0
+  sqlite3: ^2.3.0
+
+  # Offline TTS & Audio Playback
+  flutter_tts: ^3.8.5
+  audioplayers: ^5.2.1
+
+  # UI Icons & Utilities
+  flutter_svg: ^2.0.9
+  cupertino_icons: ^1.0.6
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^3.0.0
+
+flutter:
+  uses-material-design: true
+  assets:
+    - assets/models/
+    - assets/protocols/
+    - assets/icons/

@@ -1,0 +1,140 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "name": "SLM Medical - Emergency First-Aid Assistant Design Tokens",
+  "version": "1.0.0",
+  "description": "Design system tokens engineered for offline, low-literacy, high-stress, low-light emergency first-aid apps.",
+  "color": {
+    "theme": {
+      "dark": {
+        "background": { "value": "#0B0F19", "type": "color", "comment": "Pitch black dark background for OLED power savings and high contrast in dark/night settings" },
+        "surface": { "value": "#151C2C", "type": "color" },
+        "surfaceElevated": { "value": "#1E293B", "type": "color" },
+        "border": { "value": "#334155", "type": "color" },
+        "borderFocus": { "value": "#60A5FA", "type": "color" },
+        "textPrimary": { "value": "#FFFFFF", "type": "color" },
+        "textSecondary": { "value": "#94A3B8", "type": "color" },
+        "textMuted": { "value": "#64748B", "type": "color" }
+      },
+      "highContrast": {
+        "background": { "value": "#000000", "type": "color" },
+        "surface": { "value": "#121212", "type": "color" },
+        "textPrimary": { "value": "#FFFF00", "type": "color", "comment": "High visibility yellow on black" }
+      }
+    },
+    "severity": {
+      "critical": {
+        "main": { "value": "#DC2626", "type": "color" },
+        "bright": { "value": "#EF4444", "type": "color" },
+        "background": { "value": "#450A0A", "type": "color" },
+        "border": { "value": "#F87171", "type": "color" },
+        "text": { "value": "#FEE2E2", "type": "color" },
+        "shape": { "value": "octagon", "type": "metadata" },
+        "icon": { "value": "alert-triangle", "type": "metadata" }
+      },
+      "urgent": {
+        "main": { "value": "#D97706", "type": "color" },
+        "bright": { "value": "#F59E0B", "type": "color" },
+        "background": { "value": "#451A03", "type": "color" },
+        "border": { "value": "#FBBF24", "type": "color" },
+        "text": { "value": "#FEF3C7", "type": "color" },
+        "shape": { "value": "diamond", "type": "metadata" },
+        "icon": { "value": "alert-circle", "type": "metadata" }
+      },
+      "stable": {
+        "main": { "value": "#16A34A", "type": "color" },
+        "bright": { "value": "#22C55E", "type": "color" },
+        "background": { "value": "#052E16", "type": "color" },
+        "border": { "value": "#4ADE80", "type": "color" },
+        "text": { "value": "#DCFCE7", "type": "color" },
+        "shape": { "value": "circle", "type": "metadata" },
+        "icon": { "value": "check-shield", "type": "metadata" }
+      }
+    },
+    "voiceState": {
+      "idle": {
+        "color": { "value": "#3B82F6", "type": "color" },
+        "bg": { "value": "#1E3A8A", "type": "color" },
+        "label": { "value": "Tap to Speak", "type": "string" }
+      },
+      "listening": {
+        "color": { "value": "#A855F7", "type": "color" },
+        "pulseColor": { "value": "#C084FC", "type": "color" },
+        "bg": { "value": "#581C87", "type": "color" },
+        "label": { "value": "Listening...", "type": "string" }
+      },
+      "processing": {
+        "color": { "value": "#EC4899", "type": "color" },
+        "bg": { "value": "#831843", "type": "color" },
+        "label": { "value": "Understanding...", "type": "string" }
+      },
+      "speaking": {
+        "color": { "value": "#10B981", "type": "color" },
+        "bg": { "value": "#064E3B", "type": "color" },
+        "label": { "value": "Speaking Instructions", "type": "string" }
+      }
+    },
+    "offlineSync": {
+      "offline": {
+        "badgeBg": { "value": "#065F46", "type": "color" },
+        "badgeText": { "value": "#A7F3D0", "type": "color" },
+        "label": { "value": "100% Offline Ready", "type": "string" }
+      },
+      "syncing": {
+        "badgeBg": { "value": "#1E40AF", "type": "color" },
+        "badgeText": { "value": "#BFDBFE", "type": "color" },
+        "label": { "value": "Online • Syncing Data", "type": "string" }
+      }
+    }
+  },
+  "touchTarget": {
+    "minStandard": { "value": "56px", "type": "dimension" },
+    "primaryAction": { "value": "64px", "type": "dimension" },
+    "emergencySOS": { "value": "84px", "type": "dimension" },
+    "voiceMicButton": { "value": "76px", "type": "dimension" }
+  },
+  "typography": {
+    "fontFamily": {
+      "default": { "value": "system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" },
+      "rtlArabic": { "value": "'Segoe UI', Tahoma, Geneva, Verdana, sans-serif" },
+      "indicHindi": { "value": "'Noto Sans Devanagari', system-ui, sans-serif" }
+    },
+    "fontSize": {
+      "standard": {
+        "xs": { "value": "14px" },
+        "sm": { "value": "16px" },
+        "base": { "value": "18px" },
+        "lg": { "value": "22px" },
+        "xl": { "value": "28px" },
+        "2xl": { "value": "36px" }
+      },
+      "largeFontMode": {
+        "xs": { "value": "16px" },
+        "sm": { "value": "20px" },
+        "base": { "value": "24px" },
+        "lg": { "value": "28px" },
+        "xl": { "value": "36px" },
+        "2xl": { "value": "44px" }
+      }
+    },
+    "fontWeight": {
+      "regular": { "value": "400" },
+      "medium": { "value": "500" },
+      "bold": { "value": "700" },
+      "heavy": { "value": "900" }
+    }
+  },
+  "spacing": {
+    "xs": { "value": "4px" },
+    "sm": { "value": "8px" },
+    "md": { "value": "16px" },
+    "lg": { "value": "24px" },
+    "xl": { "value": "32px" },
+    "2xl": { "value": "48px" }
+  },
+  "radii": {
+    "sm": { "value": "8px" },
+    "md": { "value": "16px" },
+    "lg": { "value": "24px" },
+    "full": { "value": "9999px" }
+  }
+}
